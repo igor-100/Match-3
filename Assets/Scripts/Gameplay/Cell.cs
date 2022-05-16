@@ -9,6 +9,7 @@ public class Cell : MonoBehaviour, ICell
     public Transform Transform { get => transform; set => Transform = value; }
     public bool IsBlocked { get; set; }
     public IChip Chip { get; private set; }
+    public BoardIndex BoardIndex { get; set; }
 
     private void Awake()
     {
@@ -30,4 +31,18 @@ public class Cell : MonoBehaviour, ICell
             Debug.LogError("Wrong component set to cell", chip);
         }
     }
+}
+
+public struct BoardIndex
+{
+    public BoardIndex(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+
+    public int X { get; }
+    public int Y { get; }
+
+    public override string ToString() => $"({X}, {Y})";
 }

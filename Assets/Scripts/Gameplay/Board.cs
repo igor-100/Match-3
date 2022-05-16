@@ -22,10 +22,10 @@ public class Board : MonoBehaviour, IBoard
 
     void Start()
     {
-        CreateBoard(boardProperties, chipsProperties);
+        CreateBoard();
     }
 
-    private void CreateBoard(BoardProperties boardProperties, ChipsProperties chipsProperties)
+    private void CreateBoard()
     {
         transform.position = boardProperties.SpawnPoint;
 
@@ -54,6 +54,7 @@ public class Board : MonoBehaviour, IBoard
                     GameObject currentCellGO = ResourceManager.CreatePrefabInstance<EComponents>(EComponents.Cell);
                     currentCellGO.transform.position = new Vector2(startX + (offset.x * x), startY + (offset.y * y));
                     currentCell = currentCellGO.GetComponent<ICell>();
+                    currentCell.BoardIndex = new BoardIndex(x, y);
 
                     int chipId = Random.Range(0, chips.Capacity);
 
