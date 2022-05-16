@@ -57,9 +57,21 @@ public class Board : MonoBehaviour, IBoard
 
                     int chipId = Random.Range(0, chips.Capacity);
 
-                    GameObject newChip = ResourceManager.CreatePrefabInstance(chips[chipId].Type);
+                    if (IsChipTheThird(x, y, chipId))
+                    {
+                        chipId = RandomExcept(0, chips.Capacity, chipId);
+                    }
 
-                    currentCell.SetChip(newChip);
+                    var chipType = chips[chipId].Type;
+
+                    GameObject chipGO = ResourceManager.CreatePrefabInstance(chipType);
+
+                    var chipComponent = chipGO.GetComponent<IChip>();
+                    chipComponent.Id = chipId;
+                    chipComponent.Type = chipType;
+
+                    currentCell.SetChip(chipGO);
+                    boardItems[x, y] = currentCell;
                 }
                 else if (currentCell != null && currentCell.IsBlocked)
                 {
@@ -69,9 +81,66 @@ public class Board : MonoBehaviour, IBoard
         }
     }
 
+    private bool IsChipTheThird(int x, int y, int chipId)
+    {
+        if (x > 1)
+        {
+            for (int tempX = x - 1; tempX >= x - 2; tempX--)
+            {
+                var tempCell = boardItems[tempX, y];
+                if (!tempCell.IsBlocked)
+                {
+                    if (tempCell.Chip.Id != chipId)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        if (tempX == x - 2)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        if (y > 1)
+        {
+            for (int tempY = y - 1; tempY >= y - 2; tempY--)
+            {
+                var tempCell = boardItems[x, tempY];
+                if (!tempCell.IsBlocked)
+                {
+                    if (tempCell.Chip.Id != chipId)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        if (tempY == y - 2)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private void AssignBlockedCells(ICell[,] boardItems)
     {
-        for (int i = 0; i < boardProperties.EmptyCellsNumber; )
+        for (int i = 0; i < boardProperties.EmptyCellsNumber;)
         {
             int xValue = Random.Range(0, boardProperties.XSize);
             int yValue = Random.Range(0, boardProperties.YSize);
@@ -84,5 +153,12 @@ public class Board : MonoBehaviour, IBoard
                 i++;
             }
         }
+    }
+
+    private int RandomExcept(int min, int max, int except)
+    {
+        int random = Random.Range(min, max);
+        if (random >= except) random = (random + 1) % max;
+        return random;
     }
 }
