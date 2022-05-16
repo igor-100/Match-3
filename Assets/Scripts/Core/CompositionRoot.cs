@@ -7,19 +7,20 @@ public class CompositionRoot : MonoBehaviour
     private static IPlayerInput PlayerInput;
     private static IViewFactory ViewFactory;
     private static ISceneLoader SceneLoader;
-    private static IPlayer Player;
     //private static EventSystem EventSystem;
     private static IResourceManager ResourceManager;
     private static IConfiguration Configuration;
+
+    private static IBoard Board;
 
     private void OnDestroy()
     {
         UIRoot = null;
         PlayerInput = null;
-        Player = null;
         ViewFactory = null;
         Configuration = null;
         //EventSystem = null;
+        Board = null;
     }
 
     public static IResourceManager GetResourceManager()
@@ -86,5 +87,16 @@ public class CompositionRoot : MonoBehaviour
         }
 
         return PlayerInput;
+    }
+
+    public static IBoard GetBoard()
+    {
+        if (Board == null)
+        {
+            var resourceManager = GetResourceManager();
+            Board = resourceManager.CreatePrefabInstance<IBoard, EComponents>(EComponents.Board);
+        }
+
+        return Board;
     }
 }

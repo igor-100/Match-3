@@ -2,4 +2,6 @@
 
 public interface IConfiguration
 {
+    ChipsProperties GetChipsProperties();
+    BoardProperties GetBoardProperties();
 }

@@ -1,9 +1,11 @@
 public enum EComponents
 {
-    Cameras,
     SceneLoader,
     UIRoot,
-    MusicAudioMixer,
-    EffectsAudioMixer,
-    AudioListener
+    Board,
+    Cell,
+    Red_Chip,
+    Blue_Chip,
+    Green_Chip,
+    Yellow_Chip
 }
