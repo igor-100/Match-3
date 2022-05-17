@@ -6,4 +6,7 @@ public interface IChip
 {
     int Id { get; set; }
     EComponents Type { get; set; }
+
+    void Select();
+    void Deselect();
 }

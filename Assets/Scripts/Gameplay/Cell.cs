@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +11,9 @@ public class Cell : MonoBehaviour, ICell
     public bool IsBlocked { get; set; }
     public IChip Chip { get; private set; }
     public BoardIndex BoardIndex { get; set; }
+    public bool IsSelected { get; set; } = false;
+
+    public event Action<ICell> Clicked = (chip) => { };
 
     private void Awake()
     {
@@ -31,6 +35,23 @@ public class Cell : MonoBehaviour, ICell
             Debug.LogError("Wrong component set to cell", chip);
         }
     }
+
+    private void OnMouseDown()
+    {
+        Clicked(this);
+    }
+
+    public void Select()
+    {
+        IsSelected = true;
+        Chip.Select();
+    }
+
+    public void Deselect()
+    {
+        IsSelected = false;
+        Chip.Deselect();
+    }
 }
 
 public struct BoardIndex
@@ -43,6 +64,13 @@ public struct BoardIndex
 
     public int X { get; }
     public int Y { get; }
+
+    public override bool Equals(object obj)
+    {
+        return obj is BoardIndex index &&
+               X == index.X &&
+               Y == index.Y;
+    }
 
     public override string ToString() => $"({X}, {Y})";
 }

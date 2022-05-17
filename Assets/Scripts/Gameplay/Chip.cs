@@ -4,19 +4,16 @@ using UnityEngine;
 
 public class Chip : MonoBehaviour, IChip
 {
-	private static Chip previousSelected = null;
-
 	private Color initialColor;
 	private Color selectedColor;
 	private SpriteRenderer render;
-	private bool isSelected = false;
 
 	private ICell cell;
 
 	public int Id { get; set; }
     public EComponents Type { get; set; }
 
-    private void Awake()
+	private void Awake()
     {
 		render = GetComponent<SpriteRenderer>();
 		initialColor = render.color;
@@ -28,37 +25,13 @@ public class Chip : MonoBehaviour, IChip
 		cell = transform.parent.GetComponent<ICell>();
 	}
 
-    private void Select()
-	{
-		Debug.Log(cell.BoardIndex);
-		isSelected = true;
+    public void Select()
+    {
 		render.color = selectedColor;
-		previousSelected = gameObject.GetComponent<Chip>();
 	}
 
-	private void Deselect()
+	public void Deselect()
 	{
-		isSelected = false;
 		render.color = initialColor;
-		previousSelected = null;
-	}
-
-    private void OnMouseDown()
-	{
-		if (isSelected)
-		{ // Is it already selected?
-			Deselect();
-		}
-		else
-		{
-			if (previousSelected == null)
-			{ // Is it the first tile selected?
-				Select();
-			}
-			else
-			{
-				
-			}
-		}
 	}
 }

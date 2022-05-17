@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Board : MonoBehaviour, IBoard
 {
     private IResourceManager ResourceManager;
+
+    private BoardIndex selectedCellIndex;
 
     private ICell[,] boardItems;
     private BoardProperties boardProperties;
@@ -51,17 +54,14 @@ public class Board : MonoBehaviour, IBoard
 
                 if (currentCell == null)
                 {
-                    GameObject currentCellGO = ResourceManager.CreatePrefabInstance<EComponents>(EComponents.Cell);
-                    currentCellGO.transform.position = new Vector2(startX + (offset.x * x), startY + (offset.y * y));
-                    currentCell = currentCellGO.GetComponent<ICell>();
-                    currentCell.BoardIndex = new BoardIndex(x, y);
+                    currentCell = CreateCell(startX, startY, offset, x, y);
 
-                    int chipId = Random.Range(0, chips.Capacity);
+                    var possibleChipsId = chips.Select(chip => chip.Id).ToList();
+                    possibleChipsId.Remove(CheckDuplicationsToLeft(x, y));
+                    possibleChipsId.Remove(CheckDuplicationsBelow(x, y));
 
-                    if (IsChipTheThird(x, y, chipId))
-                    {
-                        chipId = RandomExcept(0, chips.Capacity, chipId);
-                    }
+                    int randomId = Random.Range(0, possibleChipsId.Count);
+                    int chipId = possibleChipsId[randomId];
 
                     var chipType = chips[chipId].Type;
 
@@ -82,61 +82,80 @@ public class Board : MonoBehaviour, IBoard
         }
     }
 
-    private bool IsChipTheThird(int x, int y, int chipId)
+    private ICell CreateCell(float startX, float startY, Vector2 offset, int x, int y)
+    {
+        GameObject currentCellGO = ResourceManager.CreatePrefabInstance<EComponents>(EComponents.Cell);
+        currentCellGO.transform.position = new Vector2(startX + (offset.x * x), startY + (offset.y * y));
+        var currentCell = currentCellGO.GetComponent<ICell>();
+        currentCell.BoardIndex = new BoardIndex(x, y);
+        currentCell.Clicked += OnCellClicked;
+        return currentCell;
+    }
+
+    private void OnCellClicked(ICell cell)
+    {
+        if (!cell.IsBlocked)
+        {
+            if (selectedCellIndex.Equals(cell.BoardIndex) && cell.IsSelected)
+            {
+                cell.Deselect();
+            }
+            else
+            {
+                boardItems[selectedCellIndex.X, selectedCellIndex.Y].Deselect();
+
+                selectedCellIndex = cell.BoardIndex;
+                cell.Select();
+            }
+        }
+    }
+
+    //
+    // Summary:
+    //     Returns -1 if no duplications were found. Other values of chip ID if duplications were found.
+    private int CheckDuplicationsToLeft(int x, int y)
     {
         if (x > 1)
         {
-            for (int tempX = x - 1; tempX >= x - 2; tempX--)
+            var firstCell = boardItems[--x, y];
+            var secondCell = boardItems[--x, y];
+
+            if (!firstCell.IsBlocked && !secondCell.IsBlocked)
             {
-                var tempCell = boardItems[tempX, y];
-                if (!tempCell.IsBlocked)
+                var firstCellChipId = firstCell.Chip.Id;
+                var secondCellChipId = secondCell.Chip.Id;
+                if (firstCellChipId == secondCellChipId)
                 {
-                    if (tempCell.Chip.Id != chipId)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        if (tempX == x - 2)
-                        {
-                            return true;
-                        }
-                    }
-                }
-                else
-                {
-                    break;
+                    return firstCellChipId;
                 }
             }
         }
 
+        return -1;
+    }
+
+    //
+    // Summary:
+    //     Returns -1 if no duplications were found. Other values of chip ID if duplications were found.
+    private int CheckDuplicationsBelow(int x, int y)
+    {
         if (y > 1)
         {
-            for (int tempY = y - 1; tempY >= y - 2; tempY--)
+            var firstCell = boardItems[x, --y];
+            var secondCell = boardItems[x, --y];
+
+            if (!firstCell.IsBlocked && !secondCell.IsBlocked)
             {
-                var tempCell = boardItems[x, tempY];
-                if (!tempCell.IsBlocked)
+                var firstCellChipId = firstCell.Chip.Id;
+                var secondCellChipId = secondCell.Chip.Id;
+                if (firstCellChipId == secondCellChipId)
                 {
-                    if (tempCell.Chip.Id != chipId)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        if (tempY == y - 2)
-                        {
-                            return true;
-                        }
-                    }
-                }
-                else
-                {
-                    break;
+                    return firstCellChipId;
                 }
             }
         }
 
-        return false;
+        return -1;
     }
 
     private void AssignBlockedCells(ICell[,] boardItems)
@@ -156,10 +175,8 @@ public class Board : MonoBehaviour, IBoard
         }
     }
 
-    private int RandomExcept(int min, int max, int except)
+    private void Update()
     {
-        int random = Random.Range(min, max);
-        if (random >= except) random = (random + 1) % max;
-        return random;
+
     }
 }
