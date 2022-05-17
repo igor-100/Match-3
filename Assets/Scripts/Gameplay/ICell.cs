@@ -14,6 +14,7 @@ public interface ICell
     event Action<ICell> Clicked;
 
     void SetChip(GameObject chipObject);
+    void DestroyChip();
     void RemoveChip();
     void Select();
     void Deselect();

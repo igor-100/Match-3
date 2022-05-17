@@ -8,6 +8,10 @@ public class Cell : MonoBehaviour, ICell
     private IBoard Board;
     private GameObject chipGameObject;
 
+    private Color initialColor;
+    private Color blockedColor;
+    private SpriteRenderer render;
+
     public Transform Transform { get => transform; set => Transform = value; }
     public bool IsBlocked { get; set; }
     public IChip Chip { get; private set; }
@@ -18,8 +22,20 @@ public class Cell : MonoBehaviour, ICell
 
     private void Awake()
     {
+        render = GetComponent<SpriteRenderer>();
+        initialColor = render.color;
+        blockedColor = Color.gray;
+
         Board = CompositionRoot.GetBoard();
         transform.parent = Board.Transform;
+    }
+
+    private void Start()
+    {
+        if (IsBlocked)
+        {
+            render.color = Color.gray;
+        }
     }
 
     public void SetChip(GameObject chip)
@@ -38,9 +54,15 @@ public class Cell : MonoBehaviour, ICell
         }
     }
 
+    public void DestroyChip()
+    {
+        Chip = null;
+        Destroy(chipGameObject);
+    }
+
     public void RemoveChip()
     {
-        Destroy(chipGameObject);
+        Chip = null;
     }
 
     private void OnMouseDown()

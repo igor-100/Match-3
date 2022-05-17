@@ -94,7 +94,7 @@ public class Board : MonoBehaviour, IBoard
 
     private void OnCellClicked(ICell cell)
     {
-        if (!cell.IsBlocked)
+        if (!cell.IsBlocked && cell.Chip != null)
         {
             if (selectedCell != null)
             {
@@ -130,6 +130,7 @@ public class Board : MonoBehaviour, IBoard
     {
         VerticalRemoval();
         HorizontalRemoval();
+        AddNewChips();
     }
 
     private void VerticalRemoval()
@@ -143,7 +144,7 @@ public class Board : MonoBehaviour, IBoard
                 var cell = boardItems[x, y];
                 if (cell.Chip != null && !cell.IsBlocked)
                 {
-                    if (cell.Chip.Id.Equals(previousChipId))
+                    if (cell.Chip.Id.Equals(previousChipId) && previousChipId != -1)
                     {
                         verticalCount++;
                         if (verticalCount > 1)
@@ -153,12 +154,13 @@ public class Board : MonoBehaviour, IBoard
                                 RemoveChipsVertically(x, y - verticalCount, y);
                                 break;
                             }
-                            else if (boardItems[x, y + 1].IsBlocked || boardItems[x, y + 1] == null)
+                            else if (boardItems[x, y + 1].IsBlocked || boardItems[x, y + 1].Chip == null)
                             {
                                 RemoveChipsVertically(x, y - verticalCount, y);
                                 previousChipId = -1;
+                                verticalCount = 0;
                             }
-                            else if (!previousChipId.Equals(boardItems[x, y + 1].Chip.Id))
+                            else if (boardItems[x, y + 1].Chip != null && !previousChipId.Equals(boardItems[x, y + 1].Chip.Id))
                             {
                                 RemoveChipsVertically(x, y - verticalCount, y);
                             }
@@ -169,6 +171,11 @@ public class Board : MonoBehaviour, IBoard
                         verticalCount = 0;
                         previousChipId = cell.Chip.Id;
                     }
+                }
+                else
+                {
+                    verticalCount = 0;
+                    previousChipId = -1;
                 }
             }
         }
@@ -185,7 +192,7 @@ public class Board : MonoBehaviour, IBoard
                 var cell = boardItems[x, y];
                 if (cell.Chip != null && !cell.IsBlocked)
                 {
-                    if (cell.Chip.Id.Equals(previousChipId))
+                    if (cell.Chip.Id.Equals(previousChipId) && previousChipId != -1)
                     {
                         horizontalCount++;
                         if (horizontalCount > 1)
@@ -195,12 +202,13 @@ public class Board : MonoBehaviour, IBoard
                                 RemoveChipsHorizontally(y, x - horizontalCount, x);
                                 break;
                             }
-                            else if (boardItems[x + 1, y].IsBlocked || boardItems[x + 1,y] == null)
+                            else if (boardItems[x + 1, y].IsBlocked || boardItems[x + 1, y].Chip == null)
                             {
                                 RemoveChipsHorizontally(y, x - horizontalCount, x);
                                 previousChipId = -1;
+                                horizontalCount = 0;
                             }
-                            else if (!previousChipId.Equals(boardItems[x + 1, y].Chip.Id))
+                            else if (boardItems[x + 1, y].Chip != null && !previousChipId.Equals(boardItems[x + 1, y].Chip.Id))
                             {
                                 RemoveChipsHorizontally(y, x - horizontalCount, x);
                             }
@@ -212,6 +220,11 @@ public class Board : MonoBehaviour, IBoard
                         previousChipId = cell.Chip.Id;
                     }
                 }
+                else
+                {
+                    horizontalCount = 0;
+                    previousChipId = -1;
+                }
             }
         }
     }
@@ -221,7 +234,7 @@ public class Board : MonoBehaviour, IBoard
     {
         for (int i = start; i <= end; i++)
         {
-            boardItems[xRow, i].RemoveChip();
+            boardItems[xRow, i].DestroyChip();
         }
     }
 
@@ -230,13 +243,71 @@ public class Board : MonoBehaviour, IBoard
     {
         for (int i = start; i <= end; i++)
         {
-            boardItems[i, yColumn].RemoveChip();
+            boardItems[i, yColumn].DestroyChip();
         }
+    }
+
+    private void AddNewChips()
+    {
+        for (int x = 0; x < boardProperties.XSize; x++)
+        {
+            for (int y = boardProperties.YSize - 2; y >= 0; y--)
+            {
+                var cell = boardItems[x, y];
+                if (cell.Chip != null)
+                {
+                    TryToMoveUp(cell, x, y);
+                }
+            }
+        }
+    }
+
+    private void TryToMoveUp(ICell fromCell, int x, int y)
+    {
+        ICell topCell = null;
+        for (int i = y; i < boardProperties.YSize; i++)
+        {
+            if (boardItems[x, i].IsBlocked)
+            {
+                break;
+            }
+            else if (boardItems[x, i].Chip == null)
+            {
+                topCell = boardItems[x, i];
+            }
+        }
+        if (topCell != null)
+        {
+            Debug.Log("Move: " + fromCell.BoardIndex + " to " + topCell.BoardIndex);
+            MoveChip(fromCell, topCell);
+        }
+    }
+
+    private void GenerateNewChip(int x)
+    {
+        var chips = chipsProperties.Chips;
+        int chipId = Random.Range(0, chips.Count);
+
+        var chipType = chips[chipId].Type;
+
+        GameObject chipGO = ResourceManager.CreatePrefabInstance(chipType);
+
+        var chipComponent = chipGO.GetComponent<IChip>();
+        chipComponent.Id = chipId;
+        chipComponent.Type = chipType;
+
+        boardItems[x, 0].SetChip(chipGO);
+    }
+
+    private void MoveChip(ICell fromCell, ICell toCell)
+    {
+        GameObject fromCellGO = fromCell.Chip.Transform.gameObject;
+        toCell.SetChip(fromCellGO);
+        fromCell.RemoveChip();
     }
 
     private void SwapChips(ICell firstCell, ICell secondCell)
     {
-
         GameObject secondChipGO = secondCell.Chip.Transform.gameObject;
         GameObject firstChipGO = firstCell.Chip.Transform.gameObject;
         firstCell.SetChip(secondChipGO);
