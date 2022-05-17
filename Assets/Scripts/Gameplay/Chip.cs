@@ -10,10 +10,11 @@ public class Chip : MonoBehaviour, IChip
 
 	private ICell cell;
 
+    public Transform Transform { get => transform; set => Transform = value; }
 	public int Id { get; set; }
     public EComponents Type { get; set; }
 
-	private void Awake()
+    private void Awake()
     {
 		render = GetComponent<SpriteRenderer>();
 		initialColor = render.color;

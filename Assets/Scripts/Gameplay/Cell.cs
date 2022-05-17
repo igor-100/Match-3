@@ -72,5 +72,10 @@ public struct BoardIndex
                Y == index.Y;
     }
 
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(X, Y);
+    }
+
     public override string ToString() => $"({X}, {Y})";
 }

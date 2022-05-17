@@ -7,7 +7,7 @@ public class Board : MonoBehaviour, IBoard
 {
     private IResourceManager ResourceManager;
 
-    private BoardIndex selectedCellIndex;
+    private ICell selectedCell;
 
     private ICell[,] boardItems;
     private BoardProperties boardProperties;
@@ -96,20 +96,49 @@ public class Board : MonoBehaviour, IBoard
     {
         if (!cell.IsBlocked)
         {
-            if (selectedCellIndex.Equals(cell.BoardIndex) && cell.IsSelected)
+            if (selectedCell != null)
             {
-                cell.Deselect();
+                if (cell.IsSelected)
+                {
+                    cell.Deselect();
+                    selectedCell = null;
+                }
+                else if (AreAdjacentCells(selectedCell, cell))
+                {
+                    selectedCell.Deselect();
+                    SwapChips(selectedCell, cell);
+                    selectedCell = null;
+                }
+                else
+                {
+                    selectedCell.Deselect();
+                    selectedCell = cell;
+                    cell.Select();
+                }
             }
             else
             {
-                boardItems[selectedCellIndex.X, selectedCellIndex.Y].Deselect();
-
-                selectedCellIndex = cell.BoardIndex;
+                selectedCell = cell;
                 cell.Select();
             }
         }
     }
 
+    private void SwapChips(ICell firstCell, ICell secondCell)
+    {
+
+        GameObject secondChipGO = secondCell.Chip.Transform.gameObject;
+        GameObject firstChipGO = firstCell.Chip.Transform.gameObject;
+        firstCell.SetChip(secondChipGO);
+        secondCell.SetChip(firstChipGO);
+    }
+
+    private bool AreAdjacentCells(ICell firstCell, ICell secondCell)
+    {
+        int xDifference = Mathf.Abs(firstCell.BoardIndex.X - secondCell.BoardIndex.X);
+        int yDifference = Mathf.Abs(firstCell.BoardIndex.Y - secondCell.BoardIndex.Y);
+        return (xDifference == 1 && yDifference == 0) || (yDifference == 1 && xDifference == 0);
+    }
     //
     // Summary:
     //     Returns -1 if no duplications were found. Other values of chip ID if duplications were found.

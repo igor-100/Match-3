@@ -4,6 +4,7 @@ using UnityEngine;
 
 public interface IChip
 {
+    Transform Transform { get; set; }
     int Id { get; set; }
     EComponents Type { get; set; }
 
