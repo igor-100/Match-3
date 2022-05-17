@@ -108,6 +108,8 @@ public class Board : MonoBehaviour, IBoard
                     selectedCell.Deselect();
                     SwapChips(selectedCell, cell);
                     selectedCell = null;
+
+                    CheckBoard();
                 }
                 else
                 {
@@ -121,6 +123,114 @@ public class Board : MonoBehaviour, IBoard
                 selectedCell = cell;
                 cell.Select();
             }
+        }
+    }
+
+    private void CheckBoard()
+    {
+        VerticalRemoval();
+        HorizontalRemoval();
+    }
+
+    private void VerticalRemoval()
+    {
+        for (int x = 0; x < boardProperties.XSize; x++)
+        {
+            int verticalCount = 0;
+            int previousChipId = -1;
+            for (int y = 0; y < boardProperties.YSize; y++)
+            {
+                var cell = boardItems[x, y];
+                if (cell.Chip != null && !cell.IsBlocked)
+                {
+                    if (cell.Chip.Id.Equals(previousChipId))
+                    {
+                        verticalCount++;
+                        if (verticalCount > 1)
+                        {
+                            if (y + 1 >= boardProperties.YSize)
+                            {
+                                RemoveChipsVertically(x, y - verticalCount, y);
+                                break;
+                            }
+                            else if (boardItems[x, y + 1].IsBlocked || boardItems[x, y + 1] == null)
+                            {
+                                RemoveChipsVertically(x, y - verticalCount, y);
+                                previousChipId = -1;
+                            }
+                            else if (!previousChipId.Equals(boardItems[x, y + 1].Chip.Id))
+                            {
+                                RemoveChipsVertically(x, y - verticalCount, y);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        verticalCount = 0;
+                        previousChipId = cell.Chip.Id;
+                    }
+                }
+            }
+        }
+    }
+
+    private void HorizontalRemoval()
+    {
+        for (int y = 0; y < boardProperties.YSize; y++)
+        {
+            int horizontalCount = 0;
+            int previousChipId = -1;
+            for (int x = 0; x < boardProperties.XSize; x++)
+            {
+                var cell = boardItems[x, y];
+                if (cell.Chip != null && !cell.IsBlocked)
+                {
+                    if (cell.Chip.Id.Equals(previousChipId))
+                    {
+                        horizontalCount++;
+                        if (horizontalCount > 1)
+                        {
+                            if (x + 1 >= boardProperties.XSize)
+                            {
+                                RemoveChipsHorizontally(y, x - horizontalCount, x);
+                                break;
+                            }
+                            else if (boardItems[x + 1, y].IsBlocked || boardItems[x + 1,y] == null)
+                            {
+                                RemoveChipsHorizontally(y, x - horizontalCount, x);
+                                previousChipId = -1;
+                            }
+                            else if (!previousChipId.Equals(boardItems[x + 1, y].Chip.Id))
+                            {
+                                RemoveChipsHorizontally(y, x - horizontalCount, x);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        horizontalCount = 0;
+                        previousChipId = cell.Chip.Id;
+                    }
+                }
+            }
+        }
+    }
+
+    // start - inclusive, end - inclusive
+    private void RemoveChipsVertically(int xRow, int start, int end)
+    {
+        for (int i = start; i <= end; i++)
+        {
+            boardItems[xRow, i].RemoveChip();
+        }
+    }
+
+    // start - inclusive, end - inclusive
+    private void RemoveChipsHorizontally(int yColumn, int start, int end)
+    {
+        for (int i = start; i <= end; i++)
+        {
+            boardItems[i, yColumn].RemoveChip();
         }
     }
 

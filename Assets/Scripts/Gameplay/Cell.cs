@@ -6,6 +6,7 @@ using UnityEngine;
 public class Cell : MonoBehaviour, ICell
 {
     private IBoard Board;
+    private GameObject chipGameObject;
 
     public Transform Transform { get => transform; set => Transform = value; }
     public bool IsBlocked { get; set; }
@@ -26,6 +27,7 @@ public class Cell : MonoBehaviour, ICell
         var chipComponent = chip.GetComponent<Chip>();
         if (chipComponent)
         {
+            chipGameObject = chip.transform.gameObject;
             chip.transform.parent = transform;
             chip.transform.position = transform.position;
             this.Chip = chipComponent;
@@ -34,6 +36,11 @@ public class Cell : MonoBehaviour, ICell
         {
             Debug.LogError("Wrong component set to cell", chip);
         }
+    }
+
+    public void RemoveChip()
+    {
+        Destroy(chipGameObject);
     }
 
     private void OnMouseDown()
