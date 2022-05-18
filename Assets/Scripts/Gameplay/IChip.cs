@@ -10,4 +10,5 @@ public interface IChip
 
     void Select();
     void Deselect();
+    void MoveToTarget(Transform target);
 }

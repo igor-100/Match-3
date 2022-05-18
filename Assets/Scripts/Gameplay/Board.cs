@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +10,15 @@ public class Board : MonoBehaviour, IBoard
 
     private ICell selectedCell;
 
+    private bool newChipsAdded;
+    private bool anySequenceRemoved;
+
     private ICell[,] boardItems;
     private BoardProperties boardProperties;
     private ChipsProperties chipsProperties;
+
+    public event Action StartedProcessingActions = () => { };
+    public event Action StopedProcessingActions = () => { };
 
     public Transform Transform { get => transform; set => Transform = value; }
 
@@ -60,7 +67,7 @@ public class Board : MonoBehaviour, IBoard
                     possibleChipsId.Remove(CheckDuplicationsToLeft(x, y));
                     possibleChipsId.Remove(CheckDuplicationsBelow(x, y));
 
-                    int randomId = Random.Range(0, possibleChipsId.Count);
+                    int randomId = UnityEngine.Random.Range(0, possibleChipsId.Count);
                     int chipId = possibleChipsId[randomId];
 
                     var chipType = chips[chipId].Type;
@@ -109,7 +116,7 @@ public class Board : MonoBehaviour, IBoard
                     SwapChips(selectedCell, cell);
                     selectedCell = null;
 
-                    CheckBoard();
+                    StartCoroutine(CheckBoard());
                 }
                 else
                 {
@@ -126,15 +133,39 @@ public class Board : MonoBehaviour, IBoard
         }
     }
 
-    private void CheckBoard()
+
+    //To split on states
+    private IEnumerator CheckBoard()
     {
+        Debug.Log("Checking Board");
+        StartedProcessingActions();
         RemoveSequences();
-        MoveChipsUp();
-        AddNewChips();
+        if (anySequenceRemoved)
+        {
+            Debug.Log("Moving chips up");
+            yield return StartCoroutine(MoveChipsUp());
+            Debug.Log("Adding new chips");
+            yield return AddNewChips();
+            if (newChipsAdded)
+            {
+                Debug.Log("Checking Board again");
+                yield return StartCoroutine(CheckBoard());
+            }
+            else
+            {
+                Debug.Log("No chips added");
+            }
+        }
+        else
+        {
+            Debug.Log("No sequence removed");
+        }
+        StopedProcessingActions();
     }
 
     private void RemoveSequences()
     {
+        anySequenceRemoved = false;
         VerticalRemoval();
         HorizontalRemoval();
     }
@@ -241,6 +272,7 @@ public class Board : MonoBehaviour, IBoard
         for (int i = start; i <= end; i++)
         {
             boardItems[xRow, i].DestroyChip();
+            anySequenceRemoved = true;
         }
     }
 
@@ -250,10 +282,11 @@ public class Board : MonoBehaviour, IBoard
         for (int i = start; i <= end; i++)
         {
             boardItems[i, yColumn].DestroyChip();
+            anySequenceRemoved = true;
         }
     }
 
-    private void MoveChipsUp()
+    private IEnumerator MoveChipsUp()
     {
         for (int x = 0; x < boardProperties.XSize; x++)
         {
@@ -266,6 +299,7 @@ public class Board : MonoBehaviour, IBoard
                 }
             }
         }
+        yield return new WaitForSeconds(1.1f);
     }
 
     private void TryToMoveUp(ICell fromCell, int x, int y)
@@ -284,20 +318,29 @@ public class Board : MonoBehaviour, IBoard
         }
         if (topCell != null)
         {
-            Debug.Log("Move: " + fromCell.BoardIndex + " to " + topCell.BoardIndex);
             MoveChip(fromCell, topCell);
         }
     }
 
     private void MoveChip(ICell fromCell, ICell toCell)
     {
-        GameObject fromCellGO = fromCell.Chip.Transform.gameObject;
-        toCell.SetChip(fromCellGO);
-        fromCell.RemoveChip();
+        StartCoroutine(MoveChipOverTime(fromCell, toCell));
     }
 
-    private void AddNewChips()
+    private IEnumerator MoveChipOverTime(ICell fromCell, ICell toCell)
     {
+        var chipGO = fromCell.Chip.Transform.gameObject;
+        var chip = fromCell.Chip;
+        chip.MoveToTarget(toCell.Transform);
+        toCell.SetChipReference(chip);
+        fromCell.RemoveChip();
+        yield return new WaitForSeconds(1f);
+        toCell.SetChip(chipGO);
+    }
+
+    private IEnumerator AddNewChips()
+    {
+        newChipsAdded = false;
         for (int x = 0; x < boardProperties.XSize; x++)
         {
             int nullChipsCounter = 0;
@@ -313,21 +356,33 @@ public class Board : MonoBehaviour, IBoard
                 }
             }
 
-            for (int i = nullChipsCounter - 1; i >= 0; i--)
+            if (nullChipsCounter > 0)
             {
-                GenerateNewChip(x);
-                if (i != 0)
+                for (int i = nullChipsCounter - 1; i >= 0; i--)
                 {
-                    MoveChip(boardItems[x, 0], boardItems[x, i]);
+                    GenerateNewChip(x);
+                    if (i != 0)
+                    {
+                        MoveChip(boardItems[x, 0], boardItems[x, i]);
+                    }
+                    newChipsAdded = true;
                 }
             }
+        }
+        if (newChipsAdded)
+        {
+            yield return new WaitForSeconds(1.1f);
+        }
+        else
+        {
+            yield return null;
         }
     }
 
     private void GenerateNewChip(int x)
     {
         var chips = chipsProperties.Chips;
-        int chipId = Random.Range(0, chips.Count);
+        int chipId = UnityEngine.Random.Range(0, chips.Count);
 
         var chipType = chips[chipId].Type;
 
@@ -406,8 +461,8 @@ public class Board : MonoBehaviour, IBoard
     {
         for (int i = 0; i < boardProperties.EmptyCellsNumber;)
         {
-            int xValue = Random.Range(0, boardProperties.XSize);
-            int yValue = Random.Range(0, boardProperties.YSize);
+            int xValue = UnityEngine.Random.Range(0, boardProperties.XSize);
+            int yValue = UnityEngine.Random.Range(0, boardProperties.YSize);
             if (boardItems[xValue, yValue] == null)
             {
                 GameObject cellGO = ResourceManager.CreatePrefabInstance<EComponents>(EComponents.Cell);

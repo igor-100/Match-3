@@ -8,6 +8,8 @@ public class Cell : MonoBehaviour, ICell
     private IBoard Board;
     private GameObject chipGameObject;
 
+    private bool isClickable;
+
     private Color initialColor;
     private Color blockedColor;
     private SpriteRenderer render;
@@ -32,10 +34,24 @@ public class Cell : MonoBehaviour, ICell
 
     private void Start()
     {
+        isClickable = true;
+        Board.StartedProcessingActions += OnBoardStartedProcessingActions;
+        Board.StopedProcessingActions += OnBoardStopedProcessingActions;
+
         if (IsBlocked)
         {
             render.color = Color.gray;
         }
+    }
+
+    private void OnBoardStartedProcessingActions()
+    {
+        isClickable = false;
+    }
+
+    private void OnBoardStopedProcessingActions()
+    {
+        isClickable = true;
     }
 
     public void SetChip(GameObject chip)
@@ -54,6 +70,11 @@ public class Cell : MonoBehaviour, ICell
         }
     }
 
+    public void SetChipReference(IChip chip)
+    {
+        this.Chip = chip;
+    }
+
     public void DestroyChip()
     {
         Chip = null;
@@ -67,7 +88,10 @@ public class Cell : MonoBehaviour, ICell
 
     private void OnMouseDown()
     {
-        Clicked(this);
+        if (isClickable)
+        {
+            Clicked(this);
+        }
     }
 
     public void Select()

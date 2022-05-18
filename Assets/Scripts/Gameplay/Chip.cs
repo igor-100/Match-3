@@ -8,6 +8,9 @@ public class Chip : MonoBehaviour, IChip
 	private Color selectedColor;
 	private SpriteRenderer render;
 
+	private bool isMoving;
+	private Transform target;
+
 	private ICell cell;
 
     public Transform Transform { get => transform; set => Transform = value; }
@@ -35,4 +38,22 @@ public class Chip : MonoBehaviour, IChip
 	{
 		render.color = initialColor;
 	}
+
+	public void MoveToTarget(Transform target)
+    {
+		this.target = target;
+		isMoving = true;
+    }
+
+    private void Update()
+    {
+        if (isMoving)
+        {
+			transform.position = Vector2.MoveTowards(transform.position, target.position, 5f * Time.deltaTime);
+            if (transform.position.Equals(target.position))
+            {
+				isMoving = false;
+            }
+		}
+    }
 }
