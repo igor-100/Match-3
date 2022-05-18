@@ -128,9 +128,15 @@ public class Board : MonoBehaviour, IBoard
 
     private void CheckBoard()
     {
+        RemoveSequences();
+        MoveChipsUp();
+        AddNewChips();
+    }
+
+    private void RemoveSequences()
+    {
         VerticalRemoval();
         HorizontalRemoval();
-        AddNewChips();
     }
 
     private void VerticalRemoval()
@@ -247,7 +253,7 @@ public class Board : MonoBehaviour, IBoard
         }
     }
 
-    private void AddNewChips()
+    private void MoveChipsUp()
     {
         for (int x = 0; x < boardProperties.XSize; x++)
         {
@@ -283,6 +289,41 @@ public class Board : MonoBehaviour, IBoard
         }
     }
 
+    private void MoveChip(ICell fromCell, ICell toCell)
+    {
+        GameObject fromCellGO = fromCell.Chip.Transform.gameObject;
+        toCell.SetChip(fromCellGO);
+        fromCell.RemoveChip();
+    }
+
+    private void AddNewChips()
+    {
+        for (int x = 0; x < boardProperties.XSize; x++)
+        {
+            int nullChipsCounter = 0;
+            for (int y = 0; y < boardProperties.YSize; y++)
+            {
+                if (boardItems[x, y].Chip == null && !boardItems[x, y].IsBlocked)
+                {
+                    nullChipsCounter++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            for (int i = nullChipsCounter - 1; i >= 0; i--)
+            {
+                GenerateNewChip(x);
+                if (i != 0)
+                {
+                    MoveChip(boardItems[x, 0], boardItems[x, i]);
+                }
+            }
+        }
+    }
+
     private void GenerateNewChip(int x)
     {
         var chips = chipsProperties.Chips;
@@ -297,13 +338,6 @@ public class Board : MonoBehaviour, IBoard
         chipComponent.Type = chipType;
 
         boardItems[x, 0].SetChip(chipGO);
-    }
-
-    private void MoveChip(ICell fromCell, ICell toCell)
-    {
-        GameObject fromCellGO = fromCell.Chip.Transform.gameObject;
-        toCell.SetChip(fromCellGO);
-        fromCell.RemoveChip();
     }
 
     private void SwapChips(ICell firstCell, ICell secondCell)
