@@ -9,4 +9,5 @@ public interface IBoard
 
     event Action StartedProcessingActions;
     event Action StopedProcessingActions;
+    event Action<int> ChipsRemoved;
 }
