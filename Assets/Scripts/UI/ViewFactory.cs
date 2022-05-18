@@ -8,4 +8,12 @@
         UIRoot = uiRoot;
         ResourceManager = resourceManager;
     }
+
+    public IHUDScoreView CreateHUDScoreView()
+    {
+        var view = ResourceManager.CreatePrefabInstance<IHUDScoreView, EViews>(EViews.HUDScoreView);
+        view.SetParent(UIRoot.MainCanvas);
+
+        return view;
+    }
 }

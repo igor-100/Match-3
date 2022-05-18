@@ -20,7 +20,7 @@ public class Board : MonoBehaviour, IBoard
 
     public event Action StartedProcessingActions = () => { };
     public event Action StopedProcessingActions = () => { };
-    public event Action<int> ChipsRemoved;
+    public event Action<int> ChipsRemoved = (numberOfChips) => { };
 
     public Transform Transform { get => transform; set => Transform = value; }
 
@@ -290,6 +290,7 @@ public class Board : MonoBehaviour, IBoard
             boardItems[xRow, i].DestroyChip();
             anySequenceRemoved = true;
         }
+        ChipsRemoved(end - start + 1);
     }
 
     // start - inclusive, end - inclusive
@@ -300,6 +301,7 @@ public class Board : MonoBehaviour, IBoard
             boardItems[i, yColumn].DestroyChip();
             anySequenceRemoved = true;
         }
+        ChipsRemoved(end - start + 1);
     }
 
     private IEnumerator MoveChipsUp()
@@ -386,15 +388,26 @@ public class Board : MonoBehaviour, IBoard
         for (int x = 0; x < boardProperties.XSize; x++)
         {
             int nullChipsCounter = 0;
+
+            int currentBlockedCellYValue = -1;
+            int currentNullChipsCounterAfterBlocked = 0;
+            var blockedCellsWithNullsAfter = new Dictionary<int, int>();
             for (int y = 0; y < boardProperties.YSize; y++)
             {
-                if (boardItems[x, y].Chip == null && !boardItems[x, y].IsBlocked)
+                if (blockedCellsWithNullsAfter.Count == 0 && boardItems[x, y].Chip == null && !boardItems[x, y].IsBlocked)
                 {
                     nullChipsCounter++;
                 }
-                else
+                else if (boardItems[x, y].IsBlocked)
                 {
-                    break;
+                    currentBlockedCellYValue = y;
+                    currentNullChipsCounterAfterBlocked = 0;
+                    blockedCellsWithNullsAfter.Add(currentBlockedCellYValue, currentNullChipsCounterAfterBlocked);
+                }
+                else if (blockedCellsWithNullsAfter.Count > 0 && boardItems[x, y].Chip == null && !boardItems[x, y].IsBlocked)
+                {
+                    currentNullChipsCounterAfterBlocked++;
+                    blockedCellsWithNullsAfter[currentBlockedCellYValue] = currentNullChipsCounterAfterBlocked;
                 }
             }
 
@@ -402,12 +415,29 @@ public class Board : MonoBehaviour, IBoard
             {
                 for (int i = nullChipsCounter - 1; i >= 0; i--)
                 {
-                    GenerateNewChip(x);
+                    GenerateNewChip(x, 0);
                     if (i != 0)
                     {
                         MoveChip(boardItems[x, 0], boardItems[x, i]);
                     }
                     newChipsAdded = true;
+                }
+            }
+            if (blockedCellsWithNullsAfter.Count > 0)
+            {
+                foreach (var entry in blockedCellsWithNullsAfter)
+                {
+                    int blockedCellY = entry.Key;
+                    int nullChips = entry.Value;
+                    for (int i = blockedCellY + nullChips; i > blockedCellY; i--)
+                    {
+                        GenerateNewChip(x, blockedCellY + 1);
+                        if (i != blockedCellY + 1)
+                        {
+                            MoveChip(boardItems[x, blockedCellY + 1], boardItems[x, i]);
+                        }
+                        newChipsAdded = true;
+                    }
                 }
             }
         }
@@ -421,7 +451,7 @@ public class Board : MonoBehaviour, IBoard
         }
     }
 
-    private void GenerateNewChip(int x)
+    private void GenerateNewChip(int x, int y)
     {
         var chips = chipsProperties.Chips;
         int chipId = UnityEngine.Random.Range(0, chips.Count);
@@ -434,7 +464,7 @@ public class Board : MonoBehaviour, IBoard
         chipComponent.Id = chipId;
         chipComponent.Type = chipType;
 
-        boardItems[x, 0].SetChip(chipGO);
+        boardItems[x, y].SetChip(chipGO);
     }
 
     private IEnumerator SwapChips(ICell firstCell, ICell secondCell)
@@ -507,36 +537,72 @@ public class Board : MonoBehaviour, IBoard
         var chipId = boardItems[x, y].Chip.Id;
         int horizontalNumber = 0;
         int verticalNumber = 0;
-        if (y > 0 && !boardItems[x, y - 1].IsBlocked && chipId.Equals(boardItems[x, y - 1]?.Chip.Id))
+
+        if (y > 0)
         {
-            verticalNumber++;
-            if (y > 1 && !boardItems[x, y - 2].IsBlocked && chipId.Equals(boardItems[x, y - 2]?.Chip.Id))
+            var down1 = boardItems[x, y - 1];
+            if (down1.Chip != null && !down1.IsBlocked && chipId.Equals(down1?.Chip.Id))
             {
                 verticalNumber++;
+                if (y > 1)
+                {
+                    var down2 = boardItems[x, y - 2];
+                    if (down2.Chip != null && !down2.IsBlocked && chipId.Equals(down2?.Chip.Id))
+                    {
+                        verticalNumber++;
+                    }
+                }
             }
         }
-        if (y < boardProperties.YSize - 1 && !boardItems[x, y + 1].IsBlocked && chipId.Equals(boardItems[x, y + 1]?.Chip.Id))
+
+        if (y < boardProperties.YSize - 1)
         {
-            verticalNumber++;
-            if (y < boardProperties.YSize - 2 && !boardItems[x, y + 2].IsBlocked && chipId.Equals(boardItems[x, y + 2]?.Chip.Id))
+            var up1 = boardItems[x, y + 1];
+            if (up1.Chip != null && !up1.IsBlocked && chipId.Equals(up1?.Chip.Id))
             {
                 verticalNumber++;
+                if (y < boardProperties.YSize - 2)
+                {
+                    var up2 = boardItems[x, y + 2];
+                    if (up2.Chip != null && !up2.IsBlocked && chipId.Equals(up2?.Chip.Id))
+                    {
+                        verticalNumber++;
+                    }
+                }
             }
         }
-        if (x > 0 && !boardItems[x - 1, y].IsBlocked && chipId.Equals(boardItems[x - 1, y]?.Chip.Id))
+
+        if (x > 0)
         {
-            horizontalNumber++;
-            if (x > 1 && !boardItems[x - 2, y].IsBlocked && chipId.Equals(boardItems[x - 2, y]?.Chip.Id))
+            var left1 = boardItems[x - 1, y];
+            if (left1.Chip != null && !left1.IsBlocked && chipId.Equals(left1?.Chip.Id))
             {
                 horizontalNumber++;
+                if (x > 1)
+                {
+                    var left2 = boardItems[x - 2, y];
+                    if (left2.Chip != null && !left2.IsBlocked && chipId.Equals(left2?.Chip.Id))
+                    {
+                        horizontalNumber++;
+                    }
+                }
             }
         }
-        if (x < boardProperties.XSize - 1 && !boardItems[x + 1, y].IsBlocked && chipId.Equals(boardItems[x + 1, y]?.Chip.Id))
+
+        if (x < boardProperties.XSize - 1)
         {
-            horizontalNumber++;
-            if (x < boardProperties.XSize - 2 && !boardItems[x + 2, y].IsBlocked && chipId.Equals(boardItems[x + 2, y]?.Chip.Id))
+            var right1 = boardItems[x + 1, y];
+            if (right1.Chip != null && !right1.IsBlocked && chipId.Equals(right1?.Chip.Id))
             {
                 horizontalNumber++;
+                if (x < boardProperties.XSize - 2)
+                {
+                    var right2 = boardItems[x + 2, y];
+                    if (right2.Chip != null && !right2.IsBlocked && chipId.Equals(right2?.Chip.Id))
+                    {
+                        horizontalNumber++;
+                    }
+                }
             }
         }
 

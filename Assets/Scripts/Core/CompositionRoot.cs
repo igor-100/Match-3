@@ -12,6 +12,8 @@ public class CompositionRoot : MonoBehaviour
     private static IConfiguration Configuration;
 
     private static IBoard Board;
+    private static IScoreSystem ScoreSystem;
+    private static IHUDScore HUDScore;
 
     private void OnDestroy()
     {
@@ -21,6 +23,8 @@ public class CompositionRoot : MonoBehaviour
         Configuration = null;
         //EventSystem = null;
         Board = null;
+        ScoreSystem = null;
+        HUDScore = null;
     }
 
     public static IResourceManager GetResourceManager()
@@ -98,5 +102,27 @@ public class CompositionRoot : MonoBehaviour
         }
 
         return Board;
+    }
+
+    public static IScoreSystem GetScoreSystem()
+    {
+        if (ScoreSystem == null)
+        {
+            var resourceManager = GetResourceManager();
+            ScoreSystem = resourceManager.CreatePrefabInstance<IScoreSystem, EComponents>(EComponents.ScoreSystem);
+        }
+
+        return ScoreSystem;
+    }
+
+    public static IHUDScore GetHUDScore()
+    {
+        if (HUDScore == null)
+        {
+            var gameObject = new GameObject("HUDScore");
+            HUDScore = gameObject.AddComponent<HUDScore>();
+        }
+
+        return HUDScore;
     }
 }

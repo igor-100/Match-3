@@ -14,6 +14,11 @@ public class LevelScene : MonoBehaviour
         SceneLoader = CompositionRoot.GetSceneLoader();
 
         Board = CompositionRoot.GetBoard();
+        var uiRoot = CompositionRoot.GetUIRoot();
+        var scoreSystem = CompositionRoot.GetScoreSystem();
+
+        var HUDScore = CompositionRoot.GetHUDScore(); 
+        HUDScore.Show();
     }
 
     private void Start()
